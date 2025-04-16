@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.nbconvert.ipynb
+
+# Environment
+.env
+.venv/
+env/
+venv/
+*.env
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+logs/
+
+# Data files
+*.csv
+*.tsv
+*.json
+*.h5
+*.hdf5
+*.db
+*.sqlite3
+
+# Model checkpoints / weights
+*.ckpt
+*.pt
+*.pth
+checkpoints/
+runs/
+__pycache__/
+*.joblib
+
+# Flower (common folders)
+client*.py
+server*.py
+results/
+*.tmp
+
+# Misc
+.DS_Store
