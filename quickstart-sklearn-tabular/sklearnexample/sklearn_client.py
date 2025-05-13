@@ -17,10 +17,11 @@ class SklearnClient(NumPyClient):
         try:
             check_is_fitted(self.model)
             return [self.model.coef_, self.model.intercept_]
+
         except NotFittedError:
-            # Return default values if model is not fitted yet
             n_features = self.X_train.shape[1]
             return [np.zeros((n_features,)), 0.0]
+
 
     def set_parameters(self, parameters):
         self.model.coef_ = parameters[0]
