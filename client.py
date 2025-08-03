@@ -31,7 +31,10 @@ class ThicknessClient(fl.client.NumPyClient):
         return get_weights(self.model)
 
     def fit(self, parameters, config):  # type: ignore[override]
-        self.model = set_weights(parameters)
+        # Update the existing model instance with the received parameters.
+        # ``set_weights`` will keep ``self.model`` in-place when the estimator
+        # type matches, avoiding the creation of a brand new object every round.
+        self.model = set_weights(self.model, parameters)
         self.model.fit(self.X_train, self.y_train)
         preds = self.model.predict(self.X_val)
         mse = mean_squared_error(self.y_val, preds)
@@ -39,7 +42,8 @@ class ThicknessClient(fl.client.NumPyClient):
         return get_weights(self.model), len(self.X_train), {"mse": float(mse), "r2": float(r2)}
 
     def evaluate(self, parameters, config):  # type: ignore[override]
-        self.model = set_weights(parameters)
+        # Update model with server-provided parameters before evaluation
+        self.model = set_weights(self.model, parameters)
         preds = self.model.predict(self.X_val)
         mse = mean_squared_error(self.y_val, preds)
         r2 = r2_score(self.y_val, preds)

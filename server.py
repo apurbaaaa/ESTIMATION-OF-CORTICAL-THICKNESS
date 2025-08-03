@@ -15,9 +15,11 @@ from train_utils import evaluate_model, get_weights, set_weights
 class SklearnStrategy(fl.server.strategy.FedAvg):
     """Strategy that can aggregate various scikit-learn style models.
 
-    For ``RandomForestRegressor`` models the individual trees from all clients
-    are merged.  For other model types the best client model (based on R²)
-    is selected and broadcast in subsequent rounds.
+    ``RandomForestRegressor`` models are aggregated by concatenating the
+    decision trees from all participating clients.  For all other estimators we
+    do **not** average parameters; instead the client model achieving the
+    highest R² score in a round is chosen and broadcast to the rest of the
+    federation in the following round.
     """
 
     def __init__(self, model_name: ModelName, eval_fn: Callable, **kwargs) -> None:
@@ -39,24 +41,33 @@ class SklearnStrategy(fl.server.strategy.FedAvg):
             return ndarrays_to_parameters([]), {}
 
         if self.model_name == "random_forest":
-            base_model = set_weights(parameters_to_ndarrays(results[0][1].parameters))
+            base_model = get_model(self.model_name)
+            base_model = set_weights(
+                base_model, parameters_to_ndarrays(results[0][1].parameters)
+            )
             estimators = list(base_model.estimators_)
             for _, fit_res in results[1:]:
-                client_model = set_weights(parameters_to_ndarrays(fit_res.parameters))
+                client_model = get_model(self.model_name)
+                client_model = set_weights(
+                    client_model, parameters_to_ndarrays(fit_res.parameters)
+                )
                 estimators.extend(client_model.estimators_)
             base_model.estimators_ = estimators
             base_model.n_estimators = len(estimators)
             aggregated_parameters = ndarrays_to_parameters(get_weights(base_model))
             return aggregated_parameters, {}
 
-        # For other models, choose the client model with the highest R² score
+        # For all other estimators the ``fit`` results already contain full
+        # models.  We simply select the one with the best R² score and broadcast
+        # its parameters in the next round instead of averaging coefficients.
         best = max(results, key=lambda r: r[1].metrics.get("r2", float("-inf")))
         return best[1].parameters, {"r2": best[1].metrics.get("r2", 0.0)}
 
     def evaluate(
         self, rnd: int, parameters: fl.common.Parameters
     ) -> Tuple[float, Dict[str, fl.common.Scalar]]:  # type: ignore[override]
-        model = set_weights(parameters_to_ndarrays(parameters))
+        model = get_model(self.model_name)
+        model = set_weights(model, parameters_to_ndarrays(parameters))
         loss, metrics = self.eval_fn(model)
         return loss, metrics
 
