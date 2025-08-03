@@ -46,8 +46,6 @@ __pycache__/
 *.joblib
 
 # Flower (common folders)
-client*.py
-server*.py
 results/
 *.tmp
 
